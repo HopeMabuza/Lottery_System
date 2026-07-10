@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --dark: #1a0a2e;
+  --mid: #2a1a4a;
+  --light: #3d2a6b;
+  --gold: #c9a84c;
+  --gold-light: #e8c96a;
+  --white: #f5f5f0;
+  --grey: #9a8aaa;
+  --border: #4a3a6b;
+}
+
+body {
+  background: var(--green-dark);
+  color: var(--white);
+  font-family: 'Arial', sans-serif;
+}
+
+button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
