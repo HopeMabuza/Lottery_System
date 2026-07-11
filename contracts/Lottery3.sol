@@ -41,7 +41,6 @@ contract Lottery3 is
     struct Ticket {
         address player;
         uint8[7] numbers;
-        bool claimed;
         uint8 matchedCount;
         uint256 reward;
     }
@@ -105,9 +104,7 @@ contract Lottery3 is
 
     /// @custom:oz-upgrades-validate-as-initializer
     function initialize4() public reinitializer(4) {
-        // No need to re-init ownership, already set in previous versions.
         __Ownable_init_unchained();
-        // Game starts unpaused; owner must explicitly pause if needed
         paused = false;
     }
 
@@ -154,7 +151,6 @@ contract Lottery3 is
             Ticket({
                 player: msg.sender,
                 numbers: numbers,
-                claimed: false,
                 matchedCount: 0,
                 reward: 0
             })
@@ -251,8 +247,6 @@ contract Lottery3 is
 
         emit RequestFulfilled(requestId, randomWords);
         emit WinningNumbersGenerated(requestId, roundId, winningNumbers);
-
-        _settleRound(roundId, winningNumbers);
     }
 
     function _settleRound(uint256 roundId, uint8[7] memory _winningNumbers) internal {
@@ -492,7 +486,6 @@ contract Lottery3 is
         returns (
             address player,
             uint8[7] memory numbers,
-            bool claimed,
             uint8 matchedCount,
             uint256 reward
         )
@@ -501,7 +494,6 @@ contract Lottery3 is
         return (
             ticket.player,
             ticket.numbers,
-            ticket.claimed,
             ticket.matchedCount,
             ticket.reward
         );
@@ -528,13 +520,20 @@ contract Lottery3 is
         keyHash = _keyHash;
     }
 
+    uint256 public constant MIN_ENTRY_FEE  = 0.00001 ether;  // 10_000_000_000_000 wei
+    uint256 public constant MAX_ENTRY_FEE  = 1 ether;
+    uint256 public constant MIN_ROUND_DURATION = 1 minutes;  // 60 seconds
+    uint256 public constant MAX_ROUND_DURATION = 7 days;
+
     function setTicketPrice(uint256 price) external onlyOwner {
-        require(price > 0, "Price must be > 0");
+        require(price >= MIN_ENTRY_FEE, "Price below minimum");
+        require(price <= MAX_ENTRY_FEE, "Price above maximum");
         entryFee = price;
     }
 
     function setRoundDuration(uint256 time) external onlyOwner {
-        require(time > 0, "Duration must be > 0");
+        require(time >= MIN_ROUND_DURATION, "Duration below minimum");
+        require(time <= MAX_ROUND_DURATION, "Duration above maximum");
         roundDuration = time;
     }
 
