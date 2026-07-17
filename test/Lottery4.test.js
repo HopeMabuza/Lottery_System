@@ -324,24 +324,206 @@ describe("Lottery4", function () {
     });
   });
 
+  // ─── settleRound ─────────────────────────────────────────────────────────────
+  //
+  // RANDOM_WORDS [1,2,3,4,5,6,7] → winning [1, 15, 16, 18, 22, 31, 38]
+  //
+  // Prefix match examples against that winning sequence:
+  //   [1, 15, 16, 18, 22, 31, 38] → 7 matches (jackpot)
+  //   [1, 15, 16, 18, 22, 31, 39] → 6 matches
+  //   [1, 15, 16, 18, 22, 32, 38] → 5 matches
+  //   [1, 15, 16, 18, 23, 31, 38] → 4 matches
+  //   [1, 15, 16, 19, 22, 31, 38] → 3 matches
+  //   [1, 15, 17, 18, 22, 31, 38] → 2 matches
+  //   [2, 15, 16, 18, 22, 31, 38] → 0 matches
+
+  describe("settleRound", function () {
+    const RANDOM_WORDS = [1n, 2n, 3n, 4n, 5n, 6n, 7n];
+
+    it("reverts when called by non-owner", async function () {
+      await buyTicket(player1, [1, 2, 3, 4, 5, 6, 7]);
+      const roundId = await lottery.currentRoundId();
+      await runDrawWith(RANDOM_WORDS);
+      await expect(lottery.connect(player1).settleRound(roundId))
+        .to.be.reverted;
+    });
+
+    it("reverts if winning numbers not set (VRF not fulfilled yet)", async function () {
+      await buyTicket(player1, [1, 2, 3, 4, 5, 6, 7]);
+      const roundId = await lottery.currentRoundId();
+      await expect(lottery.settleRound(roundId))
+        .to.be.revertedWith("Winning numbers not set");
+    });
+
+    it("reverts if round already settled", async function () {
+      await buyTicket(player1, [1, 15, 16, 18, 22, 31, 38]);
+      const roundId = await lottery.currentRoundId();
+      await runDrawWith(RANDOM_WORDS);
+      await lottery.settleRound(roundId);
+      await expect(lottery.settleRound(roundId))
+        .to.be.revertedWith("Round not active");
+    });
+
+    it("marks round as drawn and inactive", async function () {
+      await buyTicket(player1, [1, 15, 16, 18, 22, 31, 38]);
+      const roundId = await lottery.currentRoundId();
+      await runDrawWith(RANDOM_WORDS);
+      await lottery.settleRound(roundId);
+      const round = await lottery.rounds(roundId);
+      expect(round.drawn).to.be.true;
+      expect(round.active).to.be.false;
+    });
+
+    it("starts a new round after settlement", async function () {
+      await buyTicket(player1, [1, 15, 16, 18, 22, 31, 38]);
+      const roundId = await lottery.currentRoundId();
+      await runDrawWith(RANDOM_WORDS);
+      await lottery.settleRound(roundId);
+      expect(await lottery.currentRoundId()).to.equal(roundId + 1n);
+    });
+
+    it("emits RoundSettled", async function () {
+      await buyTicket(player1, [1, 15, 16, 18, 22, 31, 38]);
+      const roundId = await lottery.currentRoundId();
+      await runDrawWith(RANDOM_WORDS);
+      await expect(lottery.settleRound(roundId))
+        .to.emit(lottery, "RoundSettled");
+    });
+
+    it("assigns pending reward to a winning player", async function () {
+      await buyTicket(player1, [1, 15, 16, 18, 22, 31, 38]); // 7 matches
+      const roundId = await lottery.currentRoundId();
+      await runDrawWith(RANDOM_WORDS);
+      await lottery.settleRound(roundId);
+      expect(await lottery.pendingRewards(player1.address)).to.be.gt(0n);
+    });
+
+    it("assigns no reward to a losing player", async function () {
+      await buyTicket(player1, [1, 15, 16, 18, 22, 31, 38]); // 7 matches — wins
+      await buyTicket(player2, [2, 15, 16, 18, 22, 31, 38]); // 0 matches — loses
+      const roundId = await lottery.currentRoundId();
+      await runDrawWith(RANDOM_WORDS);
+      await lottery.settleRound(roundId);
+      expect(await lottery.pendingRewards(player2.address)).to.equal(0n);
+    });
+
+    it("splits tier reward equally between two winners in the same tier", async function () {
+      await buyTicket(player1, [1, 15, 16, 18, 22, 31, 38]); // 7 matches
+      await buyTicket(player2, [1, 15, 16, 18, 22, 31, 38]); // 7 matches — duplicate ticket allowed for different player
+      const roundId = await lottery.currentRoundId();
+      await runDrawWith(RANDOM_WORDS);
+      await lottery.settleRound(roundId);
+      const r1 = await lottery.pendingRewards(player1.address);
+      const r2 = await lottery.pendingRewards(player2.address);
+      expect(r1).to.equal(r2);
+      expect(r1).to.be.gt(0n);
+    });
+
+    it("accrues owner fee after settlement", async function () {
+      await buyTicket(player1, [1, 15, 16, 18, 22, 31, 38]);
+      const roundId = await lottery.currentRoundId();
+      await runDrawWith(RANDOM_WORDS);
+      await lottery.settleRound(roundId);
+      expect(await lottery.ownerFeesAccrued()).to.be.gt(0n);
+    });
+
+    it("owner fee is 10% of the pot", async function () {
+      await buyTicket(player1, [1, 15, 16, 18, 22, 31, 38]);
+      const roundId = await lottery.currentRoundId();
+      const round = await lottery.rounds(roundId);
+      const expectedFee = round.pot / 10n;
+      await runDrawWith(RANDOM_WORDS);
+      await lottery.settleRound(roundId);
+      expect(await lottery.ownerFeesAccrued()).to.equal(expectedFee);
+    });
+
+    it("rolls over prize tiers with no winners into next round pot", async function () {
+      // Only player1 plays and gets 2 matches — tiers 3-7 have no winners and roll over
+      await buyTicket(player1, [1, 15, 17, 18, 22, 31, 38]); // 2 matches
+      const roundId = await lottery.currentRoundId();
+      await runDrawWith(RANDOM_WORDS);
+      // Read rolloverPool from the new round's pot since _startNewRound() zeroes rolloverPool
+      const tx = await lottery.settleRound(roundId);
+      await tx.wait();
+      const newRoundId = await lottery.currentRoundId();
+      const newRound = await lottery.rounds(newRoundId);
+      expect(newRound.pot).to.be.gt(0n);
+    });
+
+    it("emits RewardAssigned for each winning ticket", async function () {
+      await buyTicket(player1, [1, 15, 16, 18, 22, 31, 38]); // 7 matches
+      const roundId = await lottery.currentRoundId();
+      await runDrawWith(RANDOM_WORDS);
+      await expect(lottery.settleRound(roundId))
+        .to.emit(lottery, "RewardAssigned");
+    });
+  });
+
   // ─── withdrawReward ─────────────────────────────────────────────────────────
 
   describe("withdrawReward", function () {
+    const RANDOM_WORDS = [1n, 2n, 3n, 4n, 5n, 6n, 7n];
+
     it("reverts when player has no pending reward", async function () {
       await expect(lottery.connect(player1).withdrawReward())
         .to.be.revertedWith("No reward available");
+    });
+
+    it("pays out USDC and zeroes pending reward", async function () {
+      await buyTicket(player1, [1, 15, 16, 18, 22, 31, 38]); // 7 matches
+      const roundId = await lottery.currentRoundId();
+      await runDrawWith(RANDOM_WORDS);
+      await lottery.settleRound(roundId);
+
+      const reward = await lottery.pendingRewards(player1.address);
+      expect(reward).to.be.gt(0n);
+
+      const before = await mockUSDC.balanceOf(player1.address);
+      await lottery.connect(player1).withdrawReward();
+      const after = await mockUSDC.balanceOf(player1.address);
+
+      expect(after - before).to.equal(reward);
+      expect(await lottery.pendingRewards(player1.address)).to.equal(0n);
+    });
+
+    it("emits RewardWithdrawn", async function () {
+      await buyTicket(player1, [1, 15, 16, 18, 22, 31, 38]);
+      const roundId = await lottery.currentRoundId();
+      await runDrawWith(RANDOM_WORDS);
+      await lottery.settleRound(roundId);
+      await expect(lottery.connect(player1).withdrawReward())
+        .to.emit(lottery, "RewardWithdrawn");
     });
   });
 
   // ─── withdrawOwnerFees ──────────────────────────────────────────────────────
 
   describe("withdrawOwnerFees", function () {
+    const RANDOM_WORDS = [1n, 2n, 3n, 4n, 5n, 6n, 7n];
+
     it("reverts when called by non-owner", async function () {
       await expect(lottery.connect(player1).withdrawOwnerFees()).to.be.reverted;
     });
 
     it("reverts when no fees accrued", async function () {
       await expect(lottery.withdrawOwnerFees()).to.be.revertedWith("No owner fees");
+    });
+
+    it("pays out accrued fees to owner and zeroes the balance", async function () {
+      await buyTicket(player1, [1, 15, 16, 18, 22, 31, 38]);
+      const roundId = await lottery.currentRoundId();
+      await runDrawWith(RANDOM_WORDS);
+      await lottery.settleRound(roundId);
+
+      const fees = await lottery.ownerFeesAccrued();
+      expect(fees).to.be.gt(0n);
+
+      const before = await mockUSDC.balanceOf(owner.address);
+      await lottery.withdrawOwnerFees();
+      const after = await mockUSDC.balanceOf(owner.address);
+
+      expect(after - before).to.equal(fees);
+      expect(await lottery.ownerFeesAccrued()).to.equal(0n);
     });
   });
 

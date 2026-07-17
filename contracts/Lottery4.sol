@@ -249,6 +249,12 @@ contract Lottery4 is
         emit WinningNumbersGenerated(requestId, roundId, winningNumbers);
     }
 
+    function settleRound(uint256 roundId) external onlyOwner {
+        uint8[7] memory winning = roundWinningNumbers[roundId];
+        require(winning[0] != 0, "Winning numbers not set");
+        _settleRound(roundId, winning);
+    }
+
     function _settleRound(uint256 roundId, uint8[7] memory _winningNumbers) internal {
         RoundInfo storage round = rounds[roundId];
         require(round.active, "Round not active");
