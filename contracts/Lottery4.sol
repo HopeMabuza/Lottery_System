@@ -12,7 +12,7 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract Lottery4 is
+contract Lottery is
     Initializable,
     OwnableUpgradeable,
     UUPSUpgradeable,
@@ -76,15 +76,10 @@ contract Lottery4 is
     uint256 public roundDuration;
     bool public automationNativePayment;
 
-    // new in Lottery2
     mapping(uint256 => mapping(address => bool)) public hasEntered;
 
-    // new in Lottery3
     bool public paused;
 
-    // --- new in Lottery4 ---
-    // ERC20 token used for ticket payments and reward payouts.
-    // Reduced __gap from [37] to [36] to accommodate this new slot.
     IERC20 public paymentToken;
 
     event RequestSent(uint256 requestId, uint32 numWords);
@@ -103,16 +98,16 @@ contract Lottery4 is
     event GameUnpaused(address indexed by);
     event PaymentTokenUpdated(address indexed token);
 
-    uint256[36] private __gap;
+    uint256[50] private __gap;
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
 
-    /// @custom:oz-upgrades-validate-as-initializer
-    function initialize5(address _paymentToken) public reinitializer(5) {
-        __Ownable_init_unchained();
+    function initialize(address _paymentToken) public initializer {
+        __Ownable_init();
+        __UUPSUpgradeable_init();
         require(_paymentToken != address(0), "Invalid token address");
         paymentToken = IERC20(_paymentToken);
     }

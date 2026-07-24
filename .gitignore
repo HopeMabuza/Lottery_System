@@ -3,6 +3,7 @@
 .env.*
 Journal
 ROADMAP.md
+Docs
 
 # dependencies
 node_modules

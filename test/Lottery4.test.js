@@ -35,13 +35,10 @@ describe("Lottery4", function () {
 
     // Deploy Lottery4 proxy
     const Lottery4 = await ethers.getContractFactory("Lottery4");
-    lottery = await upgrades.deployProxy(Lottery4, [], {
-      initializer: false,
+    lottery = await upgrades.deployProxy(Lottery4, [await mockUSDC.getAddress()], {
+      initializer: "initialize",
       kind: "uups",
     });
-
-    // initialize5 sets the payment token
-    await lottery.initialize5(await mockUSDC.getAddress());
 
     // Configure
     await lottery.updateCoordinator(await mockVRF.getAddress());
