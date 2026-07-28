@@ -1,6 +1,7 @@
 // npx hardhat run scripts/deploy.js --network sepolia
 
-const { ethers, upgrades } = require("hardhat");
+const { ethers, upgrades, hre } = require("hardhat");
+const exportArtifacts = require("./exportArtifacts");
 require("dotenv").config();
 
 async function main() {
@@ -33,6 +34,8 @@ async function main() {
   console.log("     npx hardhat verify --network sepolia", implementationAddress);
   console.log("  3. Add LOTTERY_ADDRESS=" + proxyAddress, "to your .env");
   console.log("  4. Run: npx hardhat run scripts/interactive.js --network sepolia");
+
+  await exportArtifacts(hre, proxyAddress);
 }
 
 main().catch((err) => {

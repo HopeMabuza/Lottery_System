@@ -1,5 +1,19 @@
 // Usage: npx hardhat run scripts/interactive.js --network <network>
 // Set LOTTERY_ADDRESS in your .env file
+//
+// What this script does:
+//  - Connects to the deployed Lottery contract using LOTTERY_ADDRESS from .env
+//  - Uses signer[0] (PRIVATE_KEY) as the owner and signer[1] (PLAYER1_PRIVATE_KEY) as the player
+//  - Option 1:  Shows current round status (pot, tickets, time remaining, draw state)
+//  - Option 2:  Buys a ticket as the player — approves USDC spend and submits 7 numbers
+//  - Option 3:  Shows the player's pending USDC reward
+//  - Option 4:  Withdraws the player's USDC reward to their wallet
+//  - Option 5:  Settles the current round as owner (assigns rewards, starts next round)
+//  - Option 6:  Manually starts a new round as owner
+//  - Option 7:  Pauses or unpauses the game as owner
+//  - Option 8:  Withdraws accrued owner fees in USDC
+//  - Option 9:  Lists all tickets for a given round with match counts and rewards
+//  - Option 10: Manually triggers the draw (replaces Chainlink Automation on testnet)
 
 const { ethers } = require("hardhat");
 const readline = require("readline");
@@ -26,6 +40,8 @@ const LOTTERY4_ABI = [
   "function withdrawOwnerFees()",
   "function setTicketPrice(uint256)",
   "function setRoundDuration(uint256)",
+  "function performUpkeep(bytes calldata)",
+  "function checkUpkeep(bytes calldata) view returns (bool upkeepNeeded, bytes memory performData)",
 ];
 
 const ERC20_ABI = [
@@ -99,6 +115,7 @@ async function main() {
     console.log("  7. Pause / Unpause (owner)");
     console.log("  8. Withdraw owner fees");
     console.log("  9. View tickets for round");
+    console.log(" 10. Trigger draw manually (performUpkeep)");
     console.log("  0. Exit\n");
 
     const choice = (await ask("  Choice: ")).trim();
@@ -156,7 +173,10 @@ async function main() {
     }
 
     else if (choice === "5") {
-      const roundId = await lottery.currentRoundId();
+      const roundIdInput = await ask("  Round ID to settle (leave blank for current): ");
+      const roundId = roundIdInput.trim() === ""
+        ? await lottery.currentRoundId()
+        : BigInt(roundIdInput.trim());
       const confirm = await ask(`  Settle round #${roundId}? (y/n): `);
       if (confirm.toLowerCase() !== "y") continue;
       const tx = await lottery.settleRound(roundId);
@@ -211,6 +231,22 @@ async function main() {
         const [ticketPlayer, numbers, matchedCount, reward] = await lottery.getTicket(roundId, i);
         console.log(`  [${i}] ${ticketPlayer} | [${numbers.map(Number).join(", ")}] | matches: ${matchedCount} | reward: ${formatUsdc(reward)}`);
       }
+    }
+
+    else if (choice === "10") {
+      const roundId = await lottery.currentRoundId();
+      const [upkeepNeeded] = await lottery.checkUpkeep("0x");
+
+      if (!upkeepNeeded) {
+        console.log("  Upkeep not needed yet — round has not expired.");
+        continue;
+      }
+
+      const performData = ethers.AbiCoder.defaultAbiCoder().encode(["uint256"], [roundId]);
+      const tx = await lottery.performUpkeep(performData);
+      await tx.wait();
+      console.log(`  Draw triggered for round #${roundId}. Waiting for Chainlink VRF...`);
+      console.log("  Once VRF responds, call option 5 (settleRound) to complete settlement.");
     }
 
     else {

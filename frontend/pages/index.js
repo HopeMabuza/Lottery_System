@@ -4,17 +4,6 @@ import ABI from "../lib/abi";
 
 const CONTRACT = process.env.NEXT_PUBLIC_CONTRACT_ADDRESS;
 
-const G = {
-  dark: "#1a0a2e",
-  mid: "#2a1a4a",
-  light: "#3d2a6b",
-  gold: "#c9a84c",
-  goldLight: "#e8c96a",
-  white: "#f5f5f0",
-  grey: "#9a8aaa",
-  border: "#4a3a6b",
-};
-
 export default function Home() {
   const [account, setAccount] = useState(null);
   const [contract, setContract] = useState(null);
@@ -146,90 +135,70 @@ export default function Home() {
     : "CLOSED"
     : "—";
 
-  const statusColor = roundStatus === "OPEN" ? G.gold
-    : roundStatus === "PAUSED" ? "#e67e22"
-    : roundStatus === "DRAW IN PROGRESS" ? "#e67e22"
-    : G.grey;
+  const statusColorClass = roundStatus === "OPEN" ? "text-gold"
+    : roundStatus === "PAUSED" ? "text-orange"
+    : roundStatus === "DRAW IN PROGRESS" ? "text-orange"
+    : "text-muted";
 
   return (
-    <div style={{ background: G.dark, minHeight: "100vh", color: G.white }}>
+    <div className="bg-dark min-h-screen text-snow">
 
       {/* header */}
-      <div style={{ background: G.mid, borderBottom: `2px solid ${G.gold}`, padding: "0 32px", display: "flex", justifyContent: "space-between", alignItems: "center", height: "64px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <div style={{
-            fontSize: "28px",
-            animation: "spin3d 2s linear infinite",
-            display: "inline-block",
-          }}>🪙</div>
-          <span style={{ fontSize: "22px", fontWeight: "900", color: G.gold, letterSpacing: "3px" }}>LOTTO</span>
-          <span style={{ fontSize: "11px", color: G.grey, letterSpacing: "2px", marginTop: "2px" }}>POWERED BY CHAINLINK</span>
-          <style>{`
-            @keyframes spin3d {
-              0%   { transform: rotateY(0deg); }
-              100% { transform: rotateY(360deg); }
-            }
-          `}</style>
+      <header className="bg-mid border-b-2 border-gold px-8 flex justify-between items-center h-16">
+        <div className="flex items-center gap-3">
+          <span className="text-[28px] animate-spin3d">🪙</span>
+          <span className="text-[22px] font-black text-gold tracking-[3px]">LOTTO</span>
+          <span className="text-[11px] text-muted tracking-[2px] mt-0.5">POWERED BY CHAINLINK</span>
         </div>
         {account ? (
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            <span style={{ background: G.light, border: `1px solid ${G.border}`, padding: "6px 14px", fontSize: "12px", borderRadius: "2px", color: G.goldLight }}>
+          <div className="flex gap-2.5 items-center">
+            <span className="bg-lght border border-rim px-3.5 py-1.5 text-xs rounded-sm text-gold-light">
               {account.slice(0, 6)}...{account.slice(-4)}
             </span>
-            <button onClick={disconnect} style={outlineBtn}>Disconnect</button>
+            <button onClick={disconnect} className="outline-btn">Disconnect</button>
           </div>
         ) : (
-          <button onClick={connect} style={goldBtn}>Connect Wallet</button>
+          <button onClick={connect} className="gold-btn">Connect Wallet</button>
         )}
-      </div>
+      </header>
 
       {/* ticker bar */}
-      <div style={{ background: G.gold, padding: "6px 32px", fontSize: "11px", color: G.dark, fontWeight: "bold", letterSpacing: "2px", overflow: "hidden", position: "relative" }}>
-        <div style={{
-          display: "inline-block",
-          whiteSpace: "nowrap",
-          animation: "ticker 18s linear infinite",
-        }}>
+      <div className="bg-gold py-1.5 px-8 text-[11px] text-dark font-bold tracking-[2px] overflow-hidden">
+        <div className="animate-ticker">
           🪙 PICK 7 NUMBERS FROM 1–49 &nbsp;·&nbsp; MATCH FROM LEFT TO WIN &nbsp;·&nbsp; POWERED BY CHAINLINK VRF &nbsp;·&nbsp; FULLY AUTOMATED &nbsp;·&nbsp; 🪙 PICK 7 NUMBERS FROM 1–49 &nbsp;·&nbsp; MATCH FROM LEFT TO WIN &nbsp;·&nbsp; POWERED BY CHAINLINK VRF &nbsp;·&nbsp; FULLY AUTOMATED &nbsp;·&nbsp;
         </div>
-        <style>{`
-          @keyframes ticker {
-            0% { transform: translateX(0); }
-            100% { transform: translateX(-50%); }
-          }
-        `}</style>
       </div>
 
-      <div style={{ maxWidth: "860px", margin: "0 auto", padding: "28px 16px" }}>
+      <div className="max-w-[860px] mx-auto px-4 py-7">
 
         {!account ? (
-          <div style={{ textAlign: "center", marginTop: "80px" }}>
-            <div style={{ fontSize: "64px", marginBottom: "16px" }}>🎰</div>
-            <div style={{ fontSize: "28px", fontWeight: "900", color: G.gold, letterSpacing: "3px", marginBottom: "8px" }}>LOTTO</div>
-            <p style={{ color: G.grey, marginBottom: "32px", fontSize: "14px" }}>Connect your wallet to enter the draw</p>
-            <button onClick={connect} style={{ ...goldBtn, padding: "14px 48px", fontSize: "16px" }}>Connect Wallet</button>
+          <div className="text-center mt-20">
+            <div className="text-[64px] mb-4">🎰</div>
+            <div className="text-[28px] font-black text-gold tracking-[3px] mb-2">LOTTO</div>
+            <p className="text-muted mb-8 text-sm">Connect your wallet to enter the draw</p>
+            <button onClick={connect} className="gold-btn px-12 py-3.5 text-base">Connect Wallet</button>
           </div>
         ) : (
           <>
             {/* round stats */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "2px", marginBottom: "24px" }}>
+            <div className="grid grid-cols-4 gap-0.5 mb-6">
               <StatBox label="ROUND" value={`#${roundId ?? "—"}`} />
-              <StatBox label="STATUS" value={roundStatus} valueColor={statusColor} />
-              <StatBox label="POT" value={`${pot} ETH`} valueColor={G.goldLight} />
-              <StatBox label="TIME LEFT" value={paused ? "—" : timeLeft ?? "—"} valueColor={roundStatus === "OPEN" ? G.white : G.grey} />
+              <StatBox label="STATUS" value={roundStatus} valueClass={statusColorClass} />
+              <StatBox label="POT" value={`${pot} ETH`} valueClass="text-gold-light" />
+              <StatBox label="TIME LEFT" value={paused ? "—" : timeLeft ?? "—"} valueClass={roundStatus === "OPEN" ? "text-snow" : "text-muted"} />
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "2px", marginBottom: "24px" }}>
+            <div className="grid grid-cols-2 gap-0.5 mb-6">
               <StatBox label="TICKETS SOLD" value={ticketCount} />
-              <StatBox label="ENTRY FEE" value={entryFee ? `${ethers.formatEther(entryFee)} ETH` : "—"} valueColor={G.goldLight} />
+              <StatBox label="ENTRY FEE" value={entryFee ? `${ethers.formatEther(entryFee)} ETH` : "—"} valueClass="text-gold-light" />
             </div>
 
             {/* last winning numbers */}
             {lastWinningNumbers && (
-              <div style={{ background: G.mid, border: `1px solid ${G.border}`, padding: "16px 20px", marginBottom: "24px" }}>
-                <div style={{ fontSize: "10px", letterSpacing: "3px", color: G.gold, marginBottom: "12px" }}>LAST DRAW RESULTS</div>
-                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+              <div className="bg-mid border border-rim px-5 py-4 mb-6">
+                <div className="text-[10px] tracking-[3px] text-gold mb-3">LAST DRAW RESULTS</div>
+                <div className="flex gap-2 flex-wrap">
                   {lastWinningNumbers.map((n, i) => (
-                    <div key={i} style={{ width: "40px", height: "40px", borderRadius: "50%", background: G.gold, color: G.dark, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "900", fontSize: "14px" }}>
+                    <div key={i} className="w-10 h-10 rounded-full bg-gold text-dark flex items-center justify-center font-black text-sm">
                       {n}
                     </div>
                   ))}
@@ -239,49 +208,47 @@ export default function Home() {
 
             {/* pending reward */}
             {parseFloat(pendingReward) > 0 && (
-              <div style={{ background: "#2a0a4a", border: `2px solid ${G.gold}`, padding: "16px 20px", marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div className="bg-win-bg border-2 border-gold px-5 py-4 mb-6 flex justify-between items-center">
                 <div>
-                  <div style={{ fontSize: "10px", letterSpacing: "2px", color: G.gold, marginBottom: "4px" }}>🏆 YOU HAVE WINNINGS</div>
-                  <div style={{ fontSize: "22px", fontWeight: "900", color: G.goldLight }}>{pendingReward} ETH</div>
+                  <div className="text-[10px] tracking-[2px] text-gold mb-1">🏆 YOU HAVE WINNINGS</div>
+                  <div className="text-[22px] font-black text-gold-light">{pendingReward} ETH</div>
                 </div>
-                <button onClick={withdraw} disabled={loading} style={goldBtn}>Withdraw</button>
+                <button onClick={withdraw} disabled={loading} className="gold-btn">Withdraw</button>
               </div>
             )}
 
             {/* ticket entry */}
             {paused ? (
-              <div style={{ background: G.mid, border: `2px solid #e67e22`, padding: "24px", textAlign: "center", marginBottom: "24px" }}>
-                <div style={{ fontSize: "16px", fontWeight: "bold", color: "#e67e22", letterSpacing: "2px" }}>⏸ GAME PAUSED</div>
-                <div style={{ fontSize: "12px", color: G.grey, marginTop: "8px" }}>The game is temporarily paused. Check back soon.</div>
+              <div className="bg-mid border-2 border-orange px-6 py-6 text-center mb-6">
+                <div className="text-base font-bold text-orange tracking-[2px]">⏸ GAME PAUSED</div>
+                <div className="text-xs text-muted mt-2">The game is temporarily paused. Check back soon.</div>
               </div>
             ) : hasEntered ? (
-              <div style={{ background: G.mid, border: `1px solid ${G.border}`, padding: "24px", textAlign: "center", marginBottom: "24px" }}>
-                <div style={{ fontSize: "16px", fontWeight: "bold", color: G.gold, letterSpacing: "2px" }}>✅ TICKET SUBMITTED</div>
-                <div style={{ fontSize: "12px", color: G.grey, marginTop: "8px" }}>Your entry is in. Check back after the draw for results.</div>
+              <div className="bg-mid border border-rim px-6 py-6 text-center mb-6">
+                <div className="text-base font-bold text-gold tracking-[2px]">✅ TICKET SUBMITTED</div>
+                <div className="text-xs text-muted mt-2">Your entry is in. Check back after the draw for results.</div>
               </div>
             ) : round?.active && !round?.drawRequested ? (
-              <div style={{ background: G.mid, border: `1px solid ${G.border}`, padding: "24px", marginBottom: "24px" }}>
-                <div style={{ fontSize: "11px", letterSpacing: "3px", color: G.gold, marginBottom: "20px" }}>
+              <div className="bg-mid border border-rim px-6 py-6 mb-6">
+                <div className="text-[11px] tracking-[3px] text-gold mb-5">
                   SELECT YOUR 7 LUCKY NUMBERS &nbsp;
-                  <span style={{ color: selected.length === 7 ? G.goldLight : G.grey }}>({selected.length}/7)</span>
+                  <span className={selected.length === 7 ? "text-gold-light" : "text-muted"}>({selected.length}/7)</span>
                 </div>
 
                 {/* number grid */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "6px", marginBottom: "20px" }}>
+                <div className="grid grid-cols-7 gap-1.5 mb-5">
                   {Array.from({ length: 49 }, (_, i) => i + 1).map((n) => {
                     const on = selected.includes(n);
                     return (
-                      <button key={n} onClick={() => toggleNumber(n)} style={{
-                        padding: "10px 0",
-                        border: `1px solid ${on ? G.gold : G.border}`,
-                        background: on ? G.gold : "transparent",
-                        color: on ? G.dark : G.white,
-                        cursor: "pointer",
-                        fontWeight: on ? "900" : "normal",
-                        fontSize: "13px",
-                        borderRadius: "2px",
-                        transition: "all 0.1s",
-                      }}>
+                      <button
+                        key={n}
+                        onClick={() => toggleNumber(n)}
+                        className={`py-2.5 border text-[13px] rounded-sm transition-all duration-100 cursor-pointer
+                          ${on
+                            ? "border-gold bg-gold text-dark font-black"
+                            : "border-rim bg-transparent text-snow font-normal hover:border-gold"
+                          }`}
+                      >
                         {n}
                       </button>
                     );
@@ -289,30 +256,34 @@ export default function Home() {
                 </div>
 
                 {/* selected display */}
-                <div style={{ display: "flex", gap: "8px", marginBottom: "20px", minHeight: "44px", alignItems: "center", flexWrap: "wrap" }}>
+                <div className="flex gap-2 mb-5 min-h-11 items-center flex-wrap">
                   {selected.length === 0 ? (
-                    <span style={{ fontSize: "12px", color: G.grey }}>No numbers selected yet</span>
+                    <span className="text-xs text-muted">No numbers selected yet</span>
                   ) : (
                     [...selected].sort((a, b) => a - b).map((n) => (
-                      <div key={n} style={{ width: "40px", height: "40px", borderRadius: "50%", background: G.gold, color: G.dark, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "900", fontSize: "14px" }}>
+                      <div key={n} className="w-10 h-10 rounded-full bg-gold text-dark flex items-center justify-center font-black text-sm">
                         {n}
                       </div>
                     ))
                   )}
                 </div>
 
-                <div style={{ display: "flex", gap: "12px" }}>
-                  <button onClick={buyTicket} disabled={loading || selected.length !== 7} style={{ ...goldBtn, padding: "12px 32px", fontSize: "14px", opacity: selected.length !== 7 ? 0.4 : 1 }}>
+                <div className="flex gap-3">
+                  <button
+                    onClick={buyTicket}
+                    disabled={loading || selected.length !== 7}
+                    className={`gold-btn px-8 py-3 text-sm ${selected.length !== 7 ? "opacity-40" : ""}`}
+                  >
                     {loading ? "Processing..." : `ENTER DRAW — ${entryFee ? ethers.formatEther(entryFee) : "?"} ETH`}
                   </button>
                   {selected.length > 0 && (
-                    <button onClick={() => setSelected([])} style={outlineBtn}>Clear</button>
+                    <button onClick={() => setSelected([])} className="outline-btn">Clear</button>
                   )}
                 </div>
               </div>
             ) : (
-              <div style={{ background: G.mid, border: `1px solid ${G.border}`, padding: "24px", textAlign: "center", marginBottom: "24px" }}>
-                <div style={{ fontSize: "14px", fontWeight: "bold", color: G.grey, letterSpacing: "2px" }}>
+              <div className="bg-mid border border-rim px-6 py-6 text-center mb-6">
+                <div className="text-sm font-bold text-muted tracking-[2px]">
                   {round?.drawRequested ? "⏳ DRAW IN PROGRESS — AWAITING CHAINLINK VRF" : "⏳ WAITING FOR NEXT ROUND"}
                 </div>
               </div>
@@ -320,24 +291,28 @@ export default function Home() {
 
             {/* status message */}
             {status && (
-              <div style={{ background: statusType === "success" ? "#1a4a0a" : statusType === "error" ? "#4a0a0a" : G.mid, border: `1px solid ${statusType === "success" ? G.gold : statusType === "error" ? "#c0392b" : G.border}`, padding: "12px 16px", fontSize: "13px", marginBottom: "24px", color: statusType === "error" ? "#e74c3c" : G.white }}>
+              <div className={`border px-4 py-3 text-[13px] mb-6
+                ${statusType === "success" ? "bg-success-bg border-gold text-snow"
+                  : statusType === "error" ? "bg-error-bg border-[#c0392b] text-error"
+                  : "bg-mid border-rim text-snow"}`}
+              >
                 {status}
               </div>
             )}
 
             {/* reward tiers */}
-            <div style={{ background: G.mid, border: `1px solid ${G.border}`, padding: "20px" }}>
-              <div style={{ fontSize: "10px", letterSpacing: "3px", color: G.gold, marginBottom: "16px" }}>PRIZE TIERS</div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: "6px", textAlign: "center", marginBottom: "12px" }}>
+            <div className="bg-mid border border-rim p-5">
+              <div className="text-[10px] tracking-[3px] text-gold mb-4">PRIZE TIERS</div>
+              <div className="grid grid-cols-6 gap-1.5 text-center mb-3">
                 {[["2", "5%"], ["3", "10%"], ["4", "15%"], ["5", "20%"], ["6", "20%"], ["7", "30%"]].map(([m, r]) => (
-                  <div key={m} style={{ background: G.light, border: `1px solid ${G.border}`, padding: "10px 4px" }}>
-                    <div style={{ fontWeight: "900", fontSize: "18px", color: G.goldLight }}>{m}</div>
-                    <div style={{ fontSize: "10px", color: G.grey, letterSpacing: "1px" }}>MATCH</div>
-                    <div style={{ fontSize: "13px", color: G.gold, fontWeight: "bold", marginTop: "4px" }}>{r}</div>
+                  <div key={m} className="bg-lght border border-rim py-2.5 px-1">
+                    <div className="font-black text-[18px] text-gold-light">{m}</div>
+                    <div className="text-[10px] text-muted tracking-[1px]">MATCH</div>
+                    <div className="text-[13px] text-gold font-bold mt-1">{r}</div>
                   </div>
                 ))}
               </div>
-              <div style={{ fontSize: "11px", color: G.grey, lineHeight: "1.6" }}>
+              <div className="text-[11px] text-muted leading-relaxed">
                 10% owner fee deducted from pot · Numbers must match from left · Unmatched tiers roll over to next round
               </div>
             </div>
@@ -348,35 +323,11 @@ export default function Home() {
   );
 }
 
-function StatBox({ label, value, valueColor }) {
+function StatBox({ label, value, valueClass = "text-snow" }) {
   return (
-    <div style={{ background: G.mid, border: `1px solid ${G.border}`, padding: "14px 18px" }}>
-      <div style={{ fontSize: "9px", letterSpacing: "3px", color: G.grey, marginBottom: "6px" }}>{label}</div>
-      <div style={{ fontWeight: "900", fontSize: "16px", color: valueColor || G.white }}>{value}</div>
+    <div className="bg-mid border border-rim px-4 py-3.5">
+      <div className="text-[9px] tracking-[3px] text-muted mb-1.5">{label}</div>
+      <div className={`font-black text-base ${valueClass}`}>{value}</div>
     </div>
   );
 }
-
-const goldBtn = {
-  background: G.gold,
-  color: G.dark,
-  border: `2px solid ${G.gold}`,
-  padding: "8px 18px",
-  cursor: "pointer",
-  fontWeight: "bold",
-  fontSize: "13px",
-  letterSpacing: "1px",
-  borderRadius: "2px",
-};
-
-const outlineBtn = {
-  background: "transparent",
-  color: G.gold,
-  border: `2px solid ${G.gold}`,
-  padding: "8px 18px",
-  cursor: "pointer",
-  fontWeight: "bold",
-  fontSize: "13px",
-  letterSpacing: "1px",
-  borderRadius: "2px",
-};

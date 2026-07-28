@@ -1,5 +1,18 @@
 // Run this after deploy.js, before registering Chainlink Automation
 // npx hardhat run scripts/configure.js --network sepolia
+//
+// What this script does:
+//  - Connects to the deployed Lottery contract using LOTTERY_ADDRESS from .env
+//  - Sets the Chainlink VRF Coordinator address (who generates the random numbers)
+//  - Sets the VRF Subscription ID (who pays for the random number requests)
+//  - Sets the Key Hash (which Chainlink node to use on Sepolia)
+//  - Sets the Callback Gas Limit (max gas Chainlink can use when calling back)
+//  - Sets Request Confirmations (how many blocks to wait before fulfilling)
+//  - Sets Num Words (how many random numbers to request — we use 7)
+//  - Sets the Ticket Price in USDC
+//  - Sets the Round Duration (how long each round stays open)
+//
+// After this script runs, register the proxy address on automation.chain.link
 
 const { ethers } = require("hardhat");
 require("dotenv").config();
@@ -78,10 +91,6 @@ async function main() {
   tx = await lottery.setRoundDuration(ROUND_DURATION);
   await tx.wait();
   console.log("✓ Round duration set: 1 hour");
-
-  tx = await lottery.startRound();
-  await tx.wait();
-  console.log("✓ Round 1 started");
 
   console.log("\n✓ Contract is ready");
   console.log("  You can now register", contractAddress, "on automation.chain.link");
