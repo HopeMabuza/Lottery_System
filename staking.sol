@@ -53,14 +53,14 @@ contract CZT_Staking is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reen
         cztToken = IERC20(_cztToken);
         devWallet = _devWallet;
         taxRate = 1000; // 10%
-        period = 2 minutes; //DONT FORGET: change back to 1 days for final deployment
+        period = 1 days; //DONT FORGET: change back to 1 days for final deployment
         rewardsDenominator = 1_000_000;
         taxDenominator = 10_000;
 
         Tiers[0] = Tier(328,  0);   // Flexible   12% APR
-        Tiers[1] = Tier(493,  30);  // Fixed 30d  18% APR
-        Tiers[2] = Tier(602,  90);  // Fixed 90d  22% APR
-        Tiers[3] = Tier(684,  180); // Fixed 180d 25% APR
+        Tiers[1] = Tier(547,  30);  // Fixed 30d  20% APR
+        Tiers[2] = Tier(958,  90);  // Fixed 90d  35% APR
+        Tiers[3] = Tier(1506,  180); // Fixed 180d 55% APR
         TierCount = 4;
     }
 
@@ -193,6 +193,10 @@ contract CZT_Staking is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reen
         cztToken.transfer(msg.sender, amount);
         
         emit WithdrawStuckTokens(msg.sender, amount);
+    }
+
+    function setTiers(uint256 _tierIndex, uint256 _rate, uint256 _lockdays) external onlyOwner {
+        Tiers[_tierIndex] = Tier(_rate,  _lockDays); 
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
