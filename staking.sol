@@ -7,7 +7,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract CZT_Staking is Initializable, UUPSUpgradeable, OwnableUpgradeable, ReentrancyGuard {
+contract CZT_Staking2 is Initializable, UUPSUpgradeable, OwnableUpgradeable, ReentrancyGuard {
     IERC20 public cztToken;
 
     uint256 public taxRate;
@@ -195,8 +195,10 @@ contract CZT_Staking is Initializable, UUPSUpgradeable, OwnableUpgradeable, Reen
         emit WithdrawStuckTokens(msg.sender, amount);
     }
 
-    function setTiers(uint256 _tierIndex, uint256 _rate, uint256 _lockdays) external onlyOwner {
-        Tiers[_tierIndex] = Tier(_rate,  _lockDays); 
+    function setNewTiers(uint256 _tierIndex, uint256 _rate, uint256 _lockdays) external onlyOwner {
+        require(_tierIndex <= TierCount, "Invalid tier index");
+        Tiers[_tierIndex] = Tier(_rate,  _lockdays);
+        if (_tierIndex == TierCount) TierCount++;
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
